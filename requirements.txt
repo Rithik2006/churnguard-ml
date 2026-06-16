@@ -1,6 +1,6 @@
-numpy
-pandas
-scikit-learn
-xgboost
-flask
-joblib
+numpy==1.26.4
+pandas==2.1.4
+scikit-learn==1.3.2
+xgboost==1.7.6
+flask==3.0.0
+joblib==1.3.2
