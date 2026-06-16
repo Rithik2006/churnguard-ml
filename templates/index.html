@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ChurnGuard — AI Customer Retention</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#07070f;--card:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);
+  --yellow:#FFD700;--orange:#FF8C00;--red:#FF2020;--purple:#9B59F5;--white:#F0F0F0;--gray:#666;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--white);min-height:100vh;overflow-x:hidden;}
+#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;}
+.glow-left{position:fixed;top:20%;left:-10%;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(255,32,32,0.12),transparent 70%);pointer-events:none;z-index:0;animation:gp 4s infinite;}
+.glow-right{position:fixed;top:30%;right:-10%;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(255,215,0,0.1),transparent 70%);pointer-events:none;z-index:0;animation:gp 4s infinite 2s;}
+@keyframes gp{0%,100%{opacity:.6;}50%{opacity:1;}}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;padding:14px 40px;background:rgba(7,7,15,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.nl{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.ni{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--yellow),var(--red));display:flex;align-items:center;justify-content:center;font-size:18px;animation:lg 2s infinite;}
+@keyframes lg{0%,100%{box-shadow:0 0 20px rgba(255,215,0,.3);}50%{box-shadow:0 0 40px rgba(255,215,0,.7),0 0 60px rgba(255,32,32,.3);}}
+.nt{font-size:20px;font-weight:800;background:linear-gradient(90deg,var(--yellow),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.nlinks{display:flex;gap:30px;margin:0 auto;}
+.nlinks a{font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;transition:.2s;}
+.nlinks a:hover{color:var(--white);}
+.nlinks a.act{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:20px;border:1px solid var(--border);color:var(--white);}
+.nbtns{display:flex;gap:10px;}
+.bo{font-size:12px;padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--white);cursor:pointer;transition:.2s;}
+.bo:hover{border-color:var(--yellow);color:var(--yellow);}
+.bs{font-size:12px;padding:7px 16px;border-radius:8px;background:linear-gradient(135deg,var(--yellow),var(--orange));color:#000;font-weight:700;border:none;cursor:pointer;transition:.2s;box-shadow:0 0 15px rgba(255,165,0,.3);}
+.bs:hover{box-shadow:0 0 30px rgba(255,165,0,.5);transform:translateY(-1px);}
+
+/* HERO */
+#home{position:relative;z-index:10;min-height:100vh;padding-top:80px;display:flex;align-items:center;overflow:hidden;}
+.hero-inner{width:100%;max-width:1200px;margin:0 auto;padding:0 30px;display:grid;grid-template-columns:280px 1fr 280px;align-items:center;gap:20px;min-height:calc(100vh - 80px);}
+
+/* Feature cards */
+.lcards,.rcards{display:flex;flex-direction:column;gap:14px;}
+.fc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;backdrop-filter:blur(10px);transition:.3s;animation:cfloat 6s infinite ease-in-out;}
+.fc:nth-child(2){animation-delay:1.5s;}
+.fc:hover{background:rgba(255,255,255,.07);border-color:rgba(255,215,0,.3);transform:translateY(-4px);box-shadow:0 10px 30px rgba(255,215,0,.1);}
+@keyframes cfloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.fn{font-size:11px;font-weight:700;color:var(--red);margin-bottom:8px;letter-spacing:1.5px;}
+.fi{width:30px;height:30px;border-radius:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:15px;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.15);}
+.ft{font-size:13px;font-weight:700;margin-bottom:5px;}
+.fd{font-size:11px;color:rgba(255,255,255,.4);line-height:1.6;}
+.tag{display:inline-block;font-size:9px;padding:2px 7px;border-radius:10px;margin-top:6px;font-weight:700;letter-spacing:.5px;}
+
+/* CENTER ROBOT */
+.center-col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;}
+.robot-wrap{position:relative;width:280px;height:350px;display:flex;align-items:center;justify-content:center;}
+.orbit{position:absolute;border-radius:50%;border:1px solid rgba(255,215,0,.12);animation:spinslow linear infinite;}
+.o1{width:320px;height:320px;animation-duration:20s;}
+.o2{width:260px;height:260px;animation-duration:15s;animation-direction:reverse;border-color:rgba(255,32,32,.1);}
+.o3{width:200px;height:200px;animation-duration:10s;border-color:rgba(155,89,245,.12);}
+@keyframes spinslow{to{transform:rotate(360deg);}}
+.odot{position:absolute;width:7px;height:7px;border-radius:50%;top:50%;left:50%;margin:-3.5px;}
+.od1{background:var(--yellow);box-shadow:0 0 10px var(--yellow);animation:om1 20s linear infinite;}
+.od2{background:var(--red);box-shadow:0 0 10px var(--red);animation:om2 15s linear infinite;}
+@keyframes om1{from{transform:rotate(0deg) translateX(160px) rotate(0deg);}to{transform:rotate(360deg) translateX(160px) rotate(-360deg);}}
+@keyframes om2{from{transform:rotate(0deg) translateX(130px) rotate(0deg);}to{transform:rotate(-360deg) translateX(130px) rotate(360deg);}}
+.robot-body{position:relative;z-index:5;width:160px;animation:rhover 4s ease-in-out infinite;}
+@keyframes rhover{0%,100%{transform:translateY(0);}50%{transform:translateY(-15px);}}
+.rhead{width:140px;height:130px;margin:0 auto;background:linear-gradient(160deg,#1a1a2e,#12122a);border-radius:30px;border:1.5px solid rgba(155,89,245,.4);position:relative;box-shadow:0 0 40px rgba(155,89,245,.2),inset 0 0 30px rgba(155,89,245,.05);}
+.rhead::before,.rhead::after{content:'';position:absolute;width:16px;height:40px;border-radius:6px;background:linear-gradient(180deg,#1a1a2e,#0f0f20);border:1.5px solid rgba(155,89,245,.3);top:20px;}
+.rhead::before{left:-12px;}.rhead::after{right:-12px;}
+.ant{position:absolute;top:-25px;left:50%;transform:translateX(-50%);width:3px;height:20px;background:linear-gradient(180deg,var(--yellow),rgba(155,89,245,.5));border-radius:2px;}
+.anttip{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:var(--yellow);box-shadow:0 0 12px var(--yellow),0 0 24px var(--yellow);animation:tb 1.5s infinite;}
+@keyframes tb{0%,100%{opacity:1;}50%{opacity:.2;}}
+.eyes{display:flex;justify-content:space-around;padding:28px 20px 0;}
+.eye{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(255,32,32,.9),rgba(155,89,245,1));box-shadow:0 0 20px rgba(255,32,32,.6),0 0 40px rgba(155,89,245,.4);position:relative;animation:eg 2s infinite;}
+.eye:nth-child(2){animation-delay:.5s;}
+@keyframes eg{0%,100%{box-shadow:0 0 20px rgba(255,32,32,.6),0 0 40px rgba(155,89,245,.4);}50%{box-shadow:0 0 35px rgba(255,32,32,.9),0 0 65px rgba(155,89,245,.7);}}
+.eye::after{content:'';position:absolute;width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.4);top:8px;left:8px;}
+.rmouth{margin:14px 20px 0;height:14px;border-radius:8px;background:rgba(0,0,0,.5);border:1px solid rgba(155,89,245,.3);overflow:hidden;position:relative;}
+.mbar{position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,var(--purple),var(--yellow),var(--red),transparent);animation:ms 2s linear infinite;}
+@keyframes ms{to{left:100%;}}
+.rneck{width:30px;height:14px;margin:0 auto;background:linear-gradient(180deg,#1a1a2e,#111124);border-left:1.5px solid rgba(155,89,245,.3);border-right:1.5px solid rgba(155,89,245,.3);}
+.rtorso{width:130px;height:110px;margin:0 auto;background:linear-gradient(160deg,#141428,#0e0e1e);border-radius:20px;border:1.5px solid rgba(155,89,245,.3);position:relative;overflow:hidden;box-shadow:0 0 30px rgba(155,89,245,.1);}
+.tgrid{position:absolute;inset:0;background-image:linear-gradient(rgba(155,89,245,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(155,89,245,.07) 1px,transparent 1px);background-size:18px 18px;}
+.tcore{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,rgba(255,215,0,.8),rgba(255,32,32,.4));box-shadow:0 0 20px rgba(255,215,0,.5),0 0 40px rgba(255,32,32,.3);animation:cp 2s infinite;}
+@keyframes cp{0%,100%{transform:translate(-50%,-50%) scale(1);}50%{transform:translate(-50%,-50%) scale(1.15);}}
+.tlines{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:5px;}
+.tl{height:3px;border-radius:2px;background:rgba(155,89,245,.5);animation:lb 1.5s infinite;}
+.tl:nth-child(1){width:20px;}.tl:nth-child(2){width:35px;animation-delay:.2s;}.tl:nth-child(3){width:25px;animation-delay:.4s;}
+@keyframes lb{0%,100%{opacity:.4;}50%{opacity:1;}}
+.rshadow{width:120px;height:20px;margin:8px auto 0;background:radial-gradient(ellipse,rgba(155,89,245,.3),transparent 70%);filter:blur(6px);animation:sp 4s infinite ease-in-out;}
+@keyframes sp{0%,100%{transform:scaleX(1);opacity:.6;}50%{transform:scaleX(1.2);opacity:1;}}
+
+/* HERO HEADINGS */
+.hero-txt{text-align:center;}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.2);
+  border-radius:20px;padding:5px 14px;font-size:11px;
+  color:var(--yellow);font-weight:600;letter-spacing:.5px;margin-bottom:14px;
+  animation:tag-blink 3s infinite;
+}
+@keyframes tag-blink{0%,100%{border-color:rgba(255,215,0,.2);}50%{border-color:rgba(255,215,0,.5);box-shadow:0 0 15px rgba(255,215,0,.1);}}
+.hero-tag-dot{width:6px;height:6px;border-radius:50%;background:var(--yellow);animation:tb 1s infinite;}
+.h1{font-size:38px;font-weight:900;line-height:1.1;margin-bottom:6px;}
+.h1-grad{
+  display:block;
+  background:linear-gradient(90deg,var(--yellow),var(--orange),var(--red),var(--yellow));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  background-size:300%;animation:shimmer 4s linear infinite;
+}
+@keyframes shimmer{to{background-position:300%;}}
+.h1-sub{display:block;font-size:15px;color:rgba(255,255,255,.35);font-weight:400;margin-top:4px;}
+.hero-desc{font-size:12px;color:rgba(255,255,255,.35);line-height:1.7;max-width:220px;margin:0 auto;}
+
+/* right heading */
+.rhead-txt h2{font-size:28px;font-weight:900;line-height:1.2;margin-bottom:12px;}
+.rhead-txt h2 .hl{background:linear-gradient(135deg,var(--yellow),var(--red));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* STATS */
+#features{position:relative;z-index:10;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);backdrop-filter:blur(10px);padding:24px 40px;}
+.srow{max-width:900px;margin:0 auto;display:flex;justify-content:space-around;flex-wrap:wrap;gap:20px;}
+.stat{text-align:center;}
+.sv{font-size:32px;font-weight:800;background:linear-gradient(90deg,var(--yellow),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sl{font-size:10px;color:rgba(255,255,255,.35);margin-top:3px;text-transform:uppercase;letter-spacing:1px;}
+.sdiv{width:1px;background:var(--border);}
+
+/* TICKER */
+.ticker-wrap{position:relative;z-index:10;background:rgba(255,32,32,.06);border-top:1px solid rgba(255,32,32,.15);border-bottom:1px solid rgba(255,32,32,.15);padding:10px 0;overflow:hidden;}
+.ticker{display:flex;gap:60px;animation:tick 25s linear infinite;white-space:nowrap;}
+.ticker span{font-size:11px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.4);}
+.ticker span em{color:var(--yellow);font-style:normal;}
+@keyframes tick{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+/* PREDICT */
+#predict{position:relative;z-index:10;padding:80px 30px;max-width:1000px;margin:0 auto;}
+.sec-title{text-align:center;margin-bottom:40px;}
+.sec-tag{display:inline-block;font-size:10px;padding:4px 14px;border-radius:20px;background:rgba(255,32,32,.08);border:1px solid rgba(255,32,32,.2);color:var(--red);font-weight:700;letter-spacing:1px;margin-bottom:12px;}
+.sec-title h3{font-size:32px;font-weight:900;margin-bottom:8px;}
+.sec-title h3 .gy{background:linear-gradient(90deg,var(--yellow),var(--red));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sec-title p{font-size:12px;color:rgba(255,255,255,.35);}
+
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:700px){.fgrid{grid-template-columns:1fr;}.hero-inner{grid-template-columns:1fr;}.lcards,.rcards{display:none;}}
+
+.fcard{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:18px;padding:24px;backdrop-filter:blur(10px);transition:.3s;}
+.fcard:hover{border-color:rgba(255,215,0,.2);}
+.fcard-ttl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.fcard-ttl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
+
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:10px;color:rgba(255,255,255,.35);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.field input,.field select{width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:10px 13px;color:var(--white);font-size:13px;outline:none;transition:.3s;}
+.field input:focus,.field select:focus{border-color:rgba(255,215,0,.4);box-shadow:0 0 15px rgba(255,215,0,.08);}
+.field input::placeholder{color:rgba(255,255,255,.18);}
+.field select option{background:#0f0f1a;}
+
+.btn-p{width:100%;margin-top:10px;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:900;letter-spacing:.5px;cursor:pointer;background:linear-gradient(135deg,var(--yellow),var(--orange),var(--red));background-size:200%;color:#000;animation:bpulse 3s infinite;transition:.3s;}
+@keyframes bpulse{0%,100%{background-position:0%;box-shadow:0 0 20px rgba(255,165,0,.3);}50%{background-position:100%;box-shadow:0 0 45px rgba(255,165,0,.5),0 0 80px rgba(255,32,32,.25);}}
+.btn-p:hover{transform:translateY(-2px);}
+.btn-p:disabled{opacity:.4;cursor:not-allowed;animation:none;}
+
+#loading{display:none;grid-column:1/-1;text-align:center;padding:40px;}
+.lring{width:60px;height:60px;border-radius:50%;border:3px solid rgba(255,255,255,.05);border-top-color:var(--yellow);border-right-color:var(--red);animation:spin .8s linear infinite;margin:0 auto 14px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ltxt{font-size:13px;color:rgba(255,255,255,.35);}
+
+#result-panel{display:none;grid-column:1/-1;animation:rpop .5s cubic-bezier(.175,.885,.32,1.275);}
+@keyframes rpop{from{opacity:0;transform:scale(.9);}to{opacity:1;transform:scale(1);}}
+.rcard{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:18px;padding:28px;backdrop-filter:blur(10px);}
+.rtop{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:22px;}
+.remoji{font-size:56px;animation:epop .5s cubic-bezier(.175,.885,.32,1.275);}
+@keyframes epop{from{transform:scale(0)rotate(-20deg);}to{transform:scale(1)rotate(0);}}
+.pbig{font-size:60px;font-weight:900;line-height:1;animation:slidein .5s ease;}
+@keyframes slidein{from{opacity:0;transform:translateX(-30px);}to{opacity:1;transform:translateX(0);}}
+.punit{font-size:28px;font-weight:400;}
+.plbl{font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
+.rpill{padding:10px 24px;border-radius:30px;font-size:15px;font-weight:800;letter-spacing:1px;text-transform:uppercase;animation:ppop .5s .2s ease both;}
+@keyframes ppop{from{opacity:0;transform:scale(0);}to{opacity:1;transform:scale(1);}}
+.gwrap{margin-bottom:20px;}
+.glbl{font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.gbg{background:rgba(255,255,255,.04);border-radius:10px;height:16px;overflow:hidden;border:1px solid rgba(255,255,255,.06);}
+.gfill{height:100%;border-radius:10px;transition:width 1.5s cubic-bezier(.25,1,.5,1);position:relative;overflow:hidden;}
+.gfill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:gshine 2s linear infinite;}
+@keyframes gshine{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
+.gmarks{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.2);margin-top:4px;}
+.itrio{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.ibox{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;text-align:center;}
+.iv{font-size:22px;font-weight:700;}
+.il{font-size:10px;color:rgba(255,255,255,.3);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.mbox{padding:14px;border-radius:10px;font-size:13px;margin-bottom:10px;color:rgba(255,255,255,.75);border-left:3px solid;}
+.abox{padding:14px;border-radius:10px;font-size:13px;font-weight:500;border-left:3px solid var(--yellow);background:rgba(255,215,0,.05);color:var(--yellow);}
+
+footer{position:relative;z-index:10;text-align:center;padding:24px;color:rgba(255,255,255,.15);font-size:12px;border-top:1px solid var(--border);}
+footer em{color:var(--yellow);font-style:normal;}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="glow-left"></div><div class="glow-right"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nl" href="#home"><div class="ni">🛡️</div><span class="nt">ChurnGuard</span></a>
+  <div class="nlinks">
+    <a href="#home" class="act">Home</a>
+    <a href="#features">Features</a>
+    <a href="#predict">Predict</a>
+    <a href="#predict">How it Works</a>
+  </div>
+  <div class="nbtns">
+    <button class="bo">Learn More</button>
+    <button class="bs" onclick="document.getElementById('predict').scrollIntoView({behavior:'smooth'})">Try Now →</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="home">
+  <div class="hero-inner">
+
+    <!-- Left cards -->
+    <div class="lcards">
+      <div class="fc">
+        <div class="fn">01</div>
+        <div class="fi">⚡</div>
+        <div class="ft">XGBoost Engine</div>
+        <div class="fd">Gradient Boosted Decision Trees trained on 8,000+ customer records with 93% prediction accuracy</div>
+        <span class="tag" style="background:rgba(255,215,0,.1);color:var(--yellow);">ENSEMBLE ML</span>
+      </div>
+      <div class="fc">
+        <div class="fn">02</div>
+        <div class="fi">🧠</div>
+        <div class="ft">Deep Feature Engineering</div>
+        <div class="fd">RFM Analysis + 9 behavioral features processed through a Scikit-learn preprocessing pipeline</div>
+        <span class="tag" style="background:rgba(155,89,245,.1);color:#9B59F5;">NEURAL PIPELINE</span>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center-col">
+      <div class="robot-wrap">
+        <div class="orbit o1"></div><div class="orbit o2"></div><div class="orbit o3"></div>
+        <div class="odot od1"></div><div class="odot od2"></div>
+        <div class="robot-body">
+          <div class="rhead">
+            <div class="ant"><div class="anttip"></div></div>
+            <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
+            <div class="rmouth"><div class="mbar"></div></div>
+          </div>
+          <div class="rneck"></div>
+          <div class="rtorso">
+            <div class="tgrid"></div><div class="tcore"></div>
+            <div class="tlines"><div class="tl"></div><div class="tl"></div><div class="tl"></div></div>
+          </div>
+          <div class="rshadow"></div>
+        </div>
+      </div>
+      <div class="hero-txt">
+        <div class="hero-tag"><span class="hero-tag-dot"></span>Powered by XGBoost + Scikit-learn</div>
+        <div class="h1">
+          <span class="h1-grad">Predictive ML Intelligence</span>
+          <span class="h1-sub">for Customer Retention</span>
+        </div>
+        <div class="hero-desc">Real-time churn inference · Explainable AI predictions · Gradient Boosting at scale</div>
+      </div>
+    </div>
+
+    <!-- Right -->
+    <div class="rcards">
+      <div class="rhead-txt">
+        <h2>Why Choose<br/><span class="hl">ChurnGuard AI?</span></h2>
+      </div>
+      <div class="fc">
+        <div class="fn">03</div>
+        <div class="fi">📊</div>
+        <div class="ft">0.96 ROC-AUC Score</div>
+        <div class="fd">Industry-grade model evaluation — precision, recall, F1-score all optimized for imbalanced datasets</div>
+        <span class="tag" style="background:rgba(255,32,32,.1);color:var(--red);">HIGH PRECISION</span>
+      </div>
+      <div class="fc">
+        <div class="fn">04</div>
+        <div class="fi">🎯</div>
+        <div class="ft">SMOTE Balancing</div>
+        <div class="fd">Synthetic Minority Oversampling handles class imbalance — no bias toward majority class</div>
+        <span class="tag" style="background:rgba(255,140,0,.1);color:var(--orange);">DATA SCIENCE</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <span>⚡ <em>XGBoost</em> Gradient Boosting</span>
+    <span>🧠 <em>Scikit-learn</em> Pipeline</span>
+    <span>📊 <em>93%</em> Model Accuracy</span>
+    <span>🎯 <em>SMOTE</em> Class Balancing</span>
+    <span>🔥 <em>0.96</em> ROC-AUC Score</span>
+    <span>⚙️ <em>Flask</em> REST API</span>
+    <span>📈 <em>RFM</em> Feature Engineering</span>
+    <span>🤖 <em>Ensemble</em> Learning</span>
+    <span>🔬 <em>StandardScaler</em> Normalization</span>
+    <span>💡 <em>Explainable</em> AI Predictions</span>
+    <span>⚡ <em>XGBoost</em> Gradient Boosting</span>
+    <span>🧠 <em>Scikit-learn</em> Pipeline</span>
+    <span>📊 <em>93%</em> Model Accuracy</span>
+    <span>🎯 <em>SMOTE</em> Class Balancing</span>
+    <span>🔥 <em>0.96</em> ROC-AUC Score</span>
+    <span>⚙️ <em>Flask</em> REST API</span>
+    <span>📈 <em>RFM</em> Feature Engineering</span>
+    <span>🤖 <em>Ensemble</em> Learning</span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div id="features">
+  <div class="srow">
+    <div class="stat"><div class="sv" id="s1">0%</div><div class="sl">Model Accuracy</div></div>
+    <div class="sdiv"></div>
+    <div class="stat"><div class="sv" id="s2">0+</div><div class="sl">Training Records</div></div>
+    <div class="sdiv"></div>
+    <div class="stat"><div class="sv" id="s3">0</div><div class="sl">ML Algorithms Tested</div></div>
+    <div class="sdiv"></div>
+    <div class="stat"><div class="sv" id="s4">0</div><div class="sl">Input Features</div></div>
+    <div class="sdiv"></div>
+    <div class="stat"><div class="sv" id="s5">0.00</div><div class="sl">ROC-AUC Score</div></div>
+  </div>
+</div>
+
+<!-- PREDICT -->
+<section id="predict">
+  <div class="sec-title">
+    <div class="sec-tag">🔮 ML INFERENCE ENGINE</div>
+    <h3>Run <span class="gy">Churn Prediction</span></h3>
+    <p>Feed customer behavioral data into the XGBoost model — get instant churn probability with risk classification</p>
+  </div>
+  <div class="fgrid">
+    <div class="fcard">
+      <div class="fcard-ttl">👤 Customer Feature Input</div>
+      <div class="field"><label>Tenure (months)</label><input type="number" id="tenure" placeholder="e.g. 12" min="1"/></div>
+      <div class="field"><label>Total Orders</label><input type="number" id="num_of_orders" placeholder="e.g. 20" min="1"/></div>
+      <div class="field"><label>Days Since Last Purchase</label><input type="number" id="days_since_last_purchase" placeholder="e.g. 45" min="1"/></div>
+      <div class="field"><label>Total Amount Spent (₹)</label><input type="number" id="total_spent" placeholder="e.g. 5000" min="0"/></div>
+      <div class="field"><label>Average Order Value (₹)</label><input type="number" id="avg_order_value" placeholder="e.g. 250" min="0"/></div>
+    </div>
+    <div class="fcard">
+      <div class="fcard-ttl">📊 Behavioral Signals</div>
+      <div class="field"><label>Complaint Frequency</label><input type="number" id="num_complaints" placeholder="e.g. 1" min="0"/></div>
+      <div class="field"><label>Discount Usage</label>
+        <select id="discount_used">
+          <option value="">-- Select --</option>
+          <option value="1">Yes — Used Discount</option>
+          <option value="0">No — Full Price</option>
+        </select>
+      </div>
+      <div class="field"><label>App Session Frequency (per month)</label><input type="number" id="login_frequency" placeholder="e.g. 10" min="0"/></div>
+      <div class="field"><label>Product Category Preference</label>
+        <select id="preferred_category">
+          <option value="">-- Select Category --</option>
+          <option value="0">Electronics</option>
+          <option value="1">Fashion</option>
+          <option value="2">Grocery</option>
+          <option value="3">Others</option>
+        </select>
+      </div>
+      <button class="btn-p" id="btn" onclick="predict()">⚡ Run ML Inference — Predict Churn</button>
+    </div>
+
+    <div id="loading">
+      <div class="lring"></div>
+      <div class="ltxt">Running XGBoost inference on customer data...</div>
+    </div>
+
+    <div id="result-panel">
+      <div class="rcard">
+        <div class="fcard-ttl">📈 Model Output — Prediction Result</div>
+        <div class="rtop">
+          <div id="r-emoji" class="remoji"></div>
+          <div>
+            <div class="pbig" id="r-prob">--<span class="punit">%</span></div>
+            <div class="plbl">Churn Probability Score</div>
+          </div>
+          <div class="rpill" id="r-risk">--</div>
+        </div>
+        <div class="gwrap">
+          <div class="glbl">Risk Meter — XGBoost Confidence</div>
+          <div class="gbg"><div class="gfill" id="r-gauge" style="width:0%"></div></div>
+          <div class="gmarks"><span>0% Safe</span><span>25%</span><span>50% Medium</span><span>75%</span><span>100% High Risk</span></div>
+        </div>
+        <div class="itrio">
+          <div class="ibox"><div class="iv" id="i-risk">--</div><div class="il">Risk Class</div></div>
+          <div class="ibox"><div class="iv" id="i-pred">--</div><div class="il">ML Prediction</div></div>
+          <div class="ibox"><div class="iv" id="i-act">--</div><div class="il">Action Signal</div></div>
+        </div>
+        <div class="mbox" id="r-msg"></div>
+        <div class="abox" id="r-act"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>ChurnGuard &copy; 2026 — <em>XGBoost · Scikit-learn · Flask · Explainable AI</em> — Intelligent Customer Retention System</footer>
+
+<script>
+const c=document.getElementById('bg-canvas'),cx=c.getContext('2d');
+function rsz(){c.width=window.innerWidth;c.height=window.innerHeight;}rsz();window.addEventListener('resize',rsz);
+const pts=Array.from({length:80},()=>({x:Math.random()*c.width,y:Math.random()*c.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.5+.3,col:['#FFD700','#FF2020','#FF8C00','#9B59F5'][Math.floor(Math.random()*4)],a:Math.random()*.2+.05}));
+function draw(){cx.clearRect(0,0,c.width,c.height);pts.forEach(p=>{cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);cx.fillStyle=p.col;cx.globalAlpha=p.a;cx.fill();p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>c.width)p.vx*=-1;if(p.y<0||p.y>c.height)p.vy*=-1;});cx.globalAlpha=1;requestAnimationFrame(draw);}draw();
+
+function countUp(el,target,suffix,dur,decimals=0){
+  let s=0,step=target/60,t=setInterval(()=>{s+=step;if(s>=target){s=target;clearInterval(t);}el.textContent=s.toFixed(decimals)+suffix;},dur/60);
+}
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){countUp(document.getElementById('s1'),93,'%',1200);countUp(document.getElementById('s2'),8000,'+',1500);countUp(document.getElementById('s3'),6,'',800);countUp(document.getElementById('s4'),9,'',600);countUp(document.getElementById('s5'),0.96,'',1000,2);obs.disconnect();}});},{threshold:.5});
+obs.observe(document.getElementById('features'));
+
+async function predict(){
+  const fields=['tenure','num_of_orders','days_since_last_purchase','total_spent','avg_order_value','num_complaints','discount_used','login_frequency','preferred_category'];
+  const data={};
+  for(const f of fields){const v=document.getElementById(f).value;if(v===''){alert('Please fill in: '+f.replace(/_/g,' '));return;}data[f]=v;}
+  document.getElementById('loading').style.display='block';
+  document.getElementById('result-panel').style.display='none';
+  document.getElementById('btn').disabled=true;
+  try{
+    const res=await fetch('/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const j=await res.json();
+    if(j.error){alert('Error: '+j.error);return;}
+    const col=j.color;
+    document.getElementById('r-emoji').textContent=j.emoji;
+    document.getElementById('r-prob').innerHTML=j.probability+'<span class="punit">%</span>';
+    document.getElementById('r-prob').style.color=col;
+    const rk=document.getElementById('r-risk');
+    rk.textContent=j.risk;rk.style.background=col+'20';rk.style.color=col;rk.style.border='2px solid '+col;rk.style.boxShadow='0 0 20px '+col+'40';
+    const g=document.getElementById('r-gauge');g.style.width=j.probability+'%';g.style.background='linear-gradient(90deg,#FFD700,'+col+')';
+    document.getElementById('i-risk').textContent=j.risk.split(' ')[0];document.getElementById('i-risk').style.color=col;
+    document.getElementById('i-pred').textContent=j.prediction===1?'⚠️ Churn':'✅ Stay';
+    document.getElementById('i-act').textContent=j.prediction===1?'ACT NOW':'Safe';
+    const mb=document.getElementById('r-msg');mb.textContent=j.message;mb.style.background=col+'10';mb.style.borderColor=col;mb.style.color='rgba(255,255,255,.75)';
+    document.getElementById('r-act').textContent='💡 '+j.action;
+    document.getElementById('result-panel').style.display='block';
+    document.getElementById('result-panel').scrollIntoView({behavior:'smooth',block:'center'});
+  }catch(e){alert('Cannot connect!\nRun: python app.py\nThen open: http://localhost:5000');}
+  finally{document.getElementById('loading').style.display='none';document.getElementById('btn').disabled=false;}
+}
+</script>
+</body>
+</html>
